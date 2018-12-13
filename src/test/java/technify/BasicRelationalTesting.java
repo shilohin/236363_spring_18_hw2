@@ -3,6 +3,7 @@ package technify;
 import org.junit.Test;
 import technify.business.Playlist;
 import technify.business.Song;
+import technify.business.User;
 
 import static org.junit.Assert.assertEquals;
 import static technify.business.ReturnValue.*;
@@ -47,25 +48,68 @@ public class BasicRelationalTesting extends  AbstractTest {
         p.setDescription("aaa aaa");
         assertEquals(OK, Solution.addPlaylist(p));
 
+        Playlist p2 = new Playlist();
+        p2.setId(3);
+        p2.setGenre("A");
+        p2.setDescription("aaa aaa");
+        assertEquals(OK, Solution.addPlaylist(p2));
+
         assertEquals(NOT_EXISTS, Solution.addSongToPlaylist(1,1));
         assertEquals(NOT_EXISTS, Solution.addSongToPlaylist(2,1));
         assertEquals(BAD_PARAMS, Solution.addSongToPlaylist(1,2));
-        p.setGenre("A");
-        assertEquals(OK, Solution.updatePlaylist(p));
-        assertEquals(OK, Solution.addSongToPlaylist(1,2));
-        assertEquals(ALREADY_EXISTS, Solution.removeSongFromPlaylist(1,2));
+
+        assertEquals(OK, Solution.addSongToPlaylist(1,3));
+        assertEquals(ALREADY_EXISTS, Solution.addSongToPlaylist(1,3));
+        assertEquals(NOT_EXISTS, Solution.removeSongFromPlaylist(1,1));
+        assertEquals(NOT_EXISTS, Solution.removeSongFromPlaylist(3,1));
+        assertEquals(OK, Solution.removeSongFromPlaylist(1,3));
+        assertEquals(NOT_EXISTS, Solution.removeSongFromPlaylist(1,3));
     }
 
     @Test
     public void followPlaylistGoodPath()
     {
+        Playlist p = new Playlist();
+        p.setId(1);
+        p.setGenre("A");
+        p.setDescription("aaa aaa");
+        assertEquals(OK, Solution.addPlaylist(p));
 
+        User v = new User();
+        v.setId(1);
+        v.setName("A");
+        v.setCountry("a");
+        v.setPremium(true);
+        assertEquals(OK, Solution.addUser(v));
+
+        assertEquals(OK, Solution.followPlaylist(1,1));
+        assertEquals(OK, Solution.stopFollowPlaylist(1,1));
     }
 
     @Test
     public void followPlaylistBadPath()
     {
+        Playlist p = new Playlist();
+        p.setId(1);
+        p.setGenre("A");
+        p.setDescription("aaa aaa");
+        assertEquals(OK, Solution.addPlaylist(p));
 
+        User v = new User();
+        v.setId(1);
+        v.setName("A");
+        v.setCountry("a");
+        v.setPremium(true);
+        assertEquals(OK, Solution.addUser(v));
+
+        assertEquals(NOT_EXISTS, Solution.followPlaylist(1,2));
+        assertEquals(NOT_EXISTS, Solution.followPlaylist(2,1));
+        assertEquals(OK, Solution.followPlaylist(1,1));
+        assertEquals(ALREADY_EXISTS, Solution.followPlaylist(1,1));
+        assertEquals(NOT_EXISTS, Solution.stopFollowPlaylist(2,1));
+        assertEquals(NOT_EXISTS, Solution.stopFollowPlaylist(1,2));
+        assertEquals(OK, Solution.stopFollowPlaylist(1,1));
+        assertEquals(NOT_EXISTS, Solution.stopFollowPlaylist(1,1));
     }
 
 }
