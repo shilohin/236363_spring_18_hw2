@@ -866,7 +866,7 @@ public class   Solution {
             res = 0;
         } finally {
             try {
-                if (res == -1) res = convertResultSetToPlayCount(result);
+                if (res == -1) res = convertResultSetToint(result);
                 pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -882,10 +882,72 @@ public class   Solution {
     }
 
     public static Integer getPlaylistFollowersCount(Integer playlistId){
+        Connection connection = DBConnector.getConnection();
+        PreparedStatement pstmt = null;
+        ResultSet result  = null;
+        int res = -1;
+        try {
+            pstmt = connection.prepareStatement("SELECT TotalFollows " +
+                    " FROM (SELECT COUNT(userId) as TotalFollows " +
+                    " FROM UserFollowPlaylist" +
+                    " WHERE PlaylistId = ? ");
+            pstmt.setInt(1, playlistId);;
+            result = pstmt.executeQuery();
+            if(!result.next()){
+                res = 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            res = 0;
+        } finally {
+            try {
+                if (res == -1) res = convertResultSetToint(result);
+                pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                connection.close();
+                return res;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
         return null;
     }
 
     public static String getMostPopularSong(){
+        Connection connection = DBConnector.getConnection();
+        PreparedStatement pstmt = null;
+        ResultSet result  = null;
+        int res = -1;
+        try {
+            pstmt = connection.prepareStatement("SELECT MAX(TotalPlaylist) " +
+                    " FROM (SELECT  SongId,COUNT(PlaylistId) as TotalPlaylist  " +
+                    " FROM SongInPlaylist" +
+                    "GROUP BY SongId ");
+            pstmt.setInt(1, playlistId);;
+            result = pstmt.executeQuery();
+            if(!result.next()){
+                res = 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            res = 0;
+        } finally {
+            try {
+                if (res == -1) res = convertResultSetToint(result);
+                pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                connection.close();
+                return res;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
         return null;
     }
 
@@ -956,7 +1018,7 @@ public class   Solution {
         return playlist;
     }
 
-    public static int convertResultSetToPlayCount(ResultSet result) throws SQLException {
+    public static int convertResultSetToint(ResultSet result) throws SQLException {
         int playCount = (result.getInt("TotalPlayCount"));
         return playCount;
     }
