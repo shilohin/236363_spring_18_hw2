@@ -74,7 +74,7 @@ public class   Solution {
 
             // Create SongInPlaylistView view
             String statment1 =" "+
-                    "CREATE VIEW SongInPlaylistView AS "+
+                    "CREATE MATERIALIZED VIEW  SongInPlaylistView AS "+
                     "SELECT SongInPlaylist.PlaylistId, SongInPlaylist.SongId, Song.playCount  "+
                     "FROM SongInPlaylist, Song "+
                     "WHERE SongInPlaylist.SongId = Song.SongId";
@@ -82,7 +82,7 @@ public class   Solution {
             pstmt.execute();
             // Create PlaylistView view
             String statment =" "+
-                    "CREATE VIEW PlaylistView AS "+
+                    "CREATE MATERIALIZED VIEW PlaylistView AS "+
                     "SELECT PlaylistId, COUNT(SongId) AS num_song, SUM(playCount) AS TotalPlayCount  "+
                     "FROM SongInPlaylistView "+
                     "GROUP BY PlaylistId ";
@@ -665,13 +665,13 @@ public class   Solution {
         if(song.getId() == -1 || playlist.getId() == -1 ){
             ret = NOT_EXISTS;
         }
-        else if(song.getGenre() != playlist.getGenre()){
+        else if(!song.getGenre().equals(playlist.getGenre())){
             ret = BAD_PARAMS;
         }
         else {
             try {
                 pstmt = connection.prepareStatement("INSERT INTO SongInPlaylist(PlaylistId,SongId)" +
-                        " VALUES (?, ?, ?)");
+                        " VALUES (?, ?)");
                 pstmt.setInt(1, playlistId);
                 pstmt.setInt(2, songid);
                 pstmt.execute();
@@ -693,6 +693,12 @@ public class   Solution {
                 }
             }
         }
+        try {
+            connection.close();
+            return ret;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
@@ -706,7 +712,7 @@ public class   Solution {
                     " WHERE SongInPlaylist.SongId = ?  AND SongInPlaylist.PlaylistId = ?");
 
             pstmt.setInt(1, songid);
-            pstmt.setInt(1, playlistId);
+            pstmt.setInt(2, playlistId);
             Integer deleted = pstmt.executeUpdate();
             if (deleted == 0) {
                 ret = ReturnValue.NOT_EXISTS;
@@ -841,40 +847,39 @@ public class   Solution {
         return null;
     }
 
-    /*public static Integer getPlaylistTotalPlayCount(Integer playlistId){
+    public static Integer getPlaylistTotalPlayCount(Integer playlistId){
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ResultSet result  = null;
-        User new_user = User.badUser();
-        boolean bad_user = false;
+        int res = -1;
         try {
             pstmt = connection.prepareStatement("SELECT TotalPlayCount " +
                     " FROM PlaylistView" +
                     " WHERE PlaylistView.PlaylistId = ?");
-            pstmt.setInt(1, playlistId);
-            user = pstmt.executeQuery();
-            if(!user.next()){
-                bad_user = true;
+            pstmt.setInt(1, playlistId);;
+            result = pstmt.executeQuery();
+            if(!result.next()){
+                res = 0;
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            bad_user = true;
+            res = 0;
         } finally {
             try {
-                if (!bad_user) new_user = convertResultSetToUser(user);
+                if (res == -1) res = convertResultSetToPlayCount(result);
                 pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
             try {
                 connection.close();
-                return new_user;
+                return res;
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         }
         return null;
-    }*/
+    }
 
     public static Integer getPlaylistFollowersCount(Integer playlistId){
         return null;
