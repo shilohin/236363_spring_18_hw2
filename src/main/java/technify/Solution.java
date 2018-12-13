@@ -60,7 +60,7 @@ public class   Solution {
                     "       FOREIGN KEY (PlaylistId) REFERENCES Playlist(PlaylistId) ON DELETE CASCADE, \n" +
                     "       FOREIGN KEY (SongId) REFERENCES Song(SongId) ON DELETE CASCADE, \n" +
                     "       PRIMARY KEY (PlaylistId,SongId)\n" +
-                    ")");
+                    "       ORDER BY SongId  ");
             pstmt.execute();
             pstmt = connection.prepareStatement("CREATE TABLE UserFollowPlaylist\n" +
                     "(\n" +
@@ -74,7 +74,7 @@ public class   Solution {
 
             // Create SongInPlaylistView view MATERIALIZED
             String statment1 =" "+
-                    "CREATE VIEW  SongInPlaylistView AS "+
+                    "CREATE  VIEW  SongInPlaylistView AS "+
                     "SELECT SongInPlaylist.PlaylistId, SongInPlaylist.SongId, Song.playCount  "+
                     "FROM SongInPlaylist, Song "+
                     "WHERE SongInPlaylist.SongId = Song.SongId";
@@ -82,11 +82,21 @@ public class   Solution {
             pstmt.execute();
             // Create PlaylistView view
             String statment =" "+
-                    "CREATE VIEW PlaylistView AS "+
+                    "CREATE  VIEW PlaylistView AS "+
                     "SELECT PlaylistId, COUNT(SongId) AS num_song, SUM(playCount) AS TotalPlayCount  "+
                     "FROM SongInPlaylistView "+
                     "GROUP BY PlaylistId ";
             pstmt = connection.prepareStatement(statment);
+            pstmt.execute();
+
+            // Create PlaylistView view
+            String statment2 =" "+
+                    "CREATE  VIEW UserFollowNumPlaylist AS "+
+                    "SELECT  SongId,COUNT(PlaylistId) As TotalPlaylist\n  " +
+                    " FROM SongInPlaylist\n" +
+                    "GROUP BY SongId \n" +
+            "       ORDER BY SongId  ";
+            pstmt = connection.prepareStatement(statment2);
             pstmt.execute();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -887,10 +897,6 @@ public class   Solution {
         ResultSet result  = null;
         int res = -1;
         try {
-            /*pstmt = connection.prepareStatement("SELECT TotalFollows " +
-                    " FROM (SELECT COUNT(UserId) AS TotalFollows " +
-                    " FROM UserFollowPlaylist" +
-                    " WHERE PlaylistId = ? ) AS foo");*/
             pstmt = connection.prepareStatement("SELECT COUNT (UserId) AS TOTALFOLLOWS" +
                     " FROM UserFollowPlaylist" +
                     " WHERE PlaylistId = ? ");
@@ -919,40 +925,52 @@ public class   Solution {
         return null;
     }
 
-    /*public static String getMostPopularSong(){
+    public static String getMostPopularSong(){
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ResultSet result  = null;
-        int res = -1;
+        String res = null;
+        int total = -1 ;
         try {
-            pstmt = connection.prepareStatement("SELECT MAX(TotalPlaylist) " +
-                    " FROM (SELECT  SongId,COUNT(PlaylistId) as TotalPlaylist  " +
-                    " FROM SongInPlaylist" +
-                    "GROUP BY SongId ");
-            pstmt.setInt(1, playlistId);;
+            pstmt = connection.prepareStatement("SELECT SongId " +
+                    " FROM UserFollowNumPlaylist " +
+                    "WHERE PlaylistId = (SELECT MAX(TotalPlaylist) FROM UserFollowNumPlaylist  ");
             result = pstmt.executeQuery();
             if(!result.next()){
-                res = 0;
+                res = "No Songs";
+                total = 0;
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            res = 0;
-        } finally {
+            res = null;
+        } if(total == -1){
             try {
-                if (res == -1) res = convertResultSetToint(result);
-                pstmt.close();
+                pstmt = connection.prepareStatement("SELECT name " +
+                        " FROM Song " +
+                        "WHERE SongId = ?  ");
+                pstmt.setInt(1, convertResultSetToint(result,"SongId"));;
+                result = pstmt.executeQuery();
+                res = convertResultSetToString(result, "name");
             } catch (SQLException e) {
                 e.printStackTrace();
-            }
-            try {
-                connection.close();
-                return res;
-            } catch (SQLException e) {
-                e.printStackTrace();
+                res = null;
             }
         }
+                 try {
+                     pstmt.close();
+                 } catch (SQLException e) {
+                     e.printStackTrace();
+                 }
+                 try {
+                     connection.close();
+                     return res;
+                 } catch (SQLException e) {
+                     e.printStackTrace();
+                 }
+
+
         return null;
-    }*/
+    }
 
     public static Integer getMostPopularPlaylist(){
         Connection connection = DBConnector.getConnection();
@@ -1076,6 +1094,11 @@ public class   Solution {
 
     public static int convertResultSetToint(ResultSet result, String collumn) throws SQLException {
         int playCount = (result.getInt(collumn));
+        return playCount;
+    }
+
+    public static String convertResultSetToString(ResultSet result, String string) throws SQLException {
+        String playCount = (result.getString(string));
         return playCount;
     }
 }
