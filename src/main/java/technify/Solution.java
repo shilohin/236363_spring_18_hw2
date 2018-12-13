@@ -1029,22 +1029,27 @@ public class   Solution {
         return null;
     }
 
+    //TODO: BEN
     public static ArrayList<Integer> hottestPlaylistsOnTechnify(){
         return null;
     }
 
+    //TODO: Inbar
     public static ArrayList<Integer> getSimilarUsers(Integer userId){
         return null;
     }
 
+    //TODO: BEN
     public static ArrayList<Integer> getTopCountryPlaylists(Integer userId) {
         return null;
     }
 
+    //TODO: Inbar
     public static ArrayList<Integer> getPlaylistRecommendation (Integer userId){
         return null;
     }
 
+    //TODO: Inbar
     public static ArrayList<Integer> getSongsRecommendationByGenre(Integer userId, String genre){
         return null;
     }
