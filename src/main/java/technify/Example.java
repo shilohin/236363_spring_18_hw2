@@ -40,14 +40,13 @@ public class Example {
                     "DELETE FROM hello_world " +
 
                             "where id = ?");
-            pstmt.setInt(1,1);
+            pstmt.setInt(1, 1);
 
             int affectedRows = pstmt.executeUpdate();
             System.out.println("deleted " + affectedRows + " rows");
         } catch (SQLException e) {
             //e.printStackTrace()();
-        }
-        finally {
+        } finally {
             try {
                 pstmt.close();
             } catch (SQLException e) {
@@ -82,11 +81,11 @@ public class Example {
         System.out.println("in order to create a new arraylist, for example, an arraylist of Integers you need to call");
         System.out.println("    ArrayList<Integer> myArrayList = new ArrayList<>();");
         ArrayList<Integer> myArrayList = new ArrayList<>();
-        System.out.println("This is how it looks like: " +myArrayList);
+        System.out.println("This is how it looks like: " + myArrayList);
         System.out.println("in order to add an item to the arraylist you need to call the add function");
         System.out.println("    myArrayList.add(1);");
         myArrayList.add(1);
-        System.out.println("This is how it looks like: " +myArrayList);
+        System.out.println("This is how it looks like: " + myArrayList);
         System.out.println("calling myArrayList.add(2); \nwill yield: ");
         myArrayList.add(2);
         System.out.println(myArrayList);
@@ -98,7 +97,7 @@ public class Example {
         System.out.println("recall that array start with 0 :)");
         System.out.println("    int i = myArrayList.get(0);\nwill yield:");
         int i = myArrayList.get(0);
-        System.out.println("    i = " + i );
+        System.out.println("    i = " + i);
         System.out.println("good luck!");
         System.out.println();
 
@@ -112,14 +111,13 @@ public class Example {
                     "UPDATE hello_world " +
                             "SET short_text = ? " +
                             "where id = ?");
-            pstmt.setInt(2,1);
+            pstmt.setInt(2, 1);
             pstmt.setString(1, "hi world!");
             int affectedRows = pstmt.executeUpdate();
             System.out.println("changed " + affectedRows + " rows");
         } catch (SQLException e) {
             //e.printStackTrace()();
-        }
-        finally {
+        } finally {
             try {
                 pstmt.close();
             } catch (SQLException e) {
@@ -133,8 +131,7 @@ public class Example {
         }
     }
 
-    private static void dropTable()
-    {
+    private static void dropTable() {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         try {
@@ -142,8 +139,7 @@ public class Example {
             pstmt.execute();
         } catch (SQLException e) {
             //e.printStackTrace()();
-        }
-        finally {
+        } finally {
             try {
                 pstmt.close();
             } catch (SQLException e) {
@@ -157,8 +153,7 @@ public class Example {
         }
     }
 
-    private static void createTable()
-    {
+    private static void createTable() {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         try {
@@ -173,8 +168,7 @@ public class Example {
             pstmt.execute();
         } catch (SQLException e) {
             //e.printStackTrace()();
-        }
-        finally {
+        } finally {
             try {
                 pstmt.close();
             } catch (SQLException e) {
@@ -189,25 +183,23 @@ public class Example {
 
     }
 
-    private static void insertIntoTable()
-    {
+    private static void insertIntoTable() {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         try {
             pstmt = connection.prepareStatement("INSERT INTO hello_world" +
                     " VALUES (?, ?), (?, ?)");
-            pstmt.setInt(1,1);
+            pstmt.setInt(1, 1);
             pstmt.setString(2, "hello world!");
-            pstmt.setInt(3,2);
-            pstmt.setString(4,"goodbye world!");
+            pstmt.setInt(3, 2);
+            pstmt.setString(4, "goodbye world!");
 
 
             pstmt.execute();
 
         } catch (SQLException e) {
             //e.printStackTrace()();
-        }
-        finally {
+        } finally {
             try {
                 pstmt.close();
             } catch (SQLException e) {
@@ -221,8 +213,7 @@ public class Example {
         }
     }
 
-    private static void selectFromTable()
-    {
+    private static void selectFromTable() {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         try {
@@ -233,8 +224,7 @@ public class Example {
 
         } catch (SQLException e) {
             //e.printStackTrace()();
-        }
-        finally {
+        } finally {
             try {
                 pstmt.close();
             } catch (SQLException e) {
@@ -247,5 +237,32 @@ public class Example {
             }
         }
     }
+}
 
+
+class printer {
+    public static void selectTable(String a) {
+        Connection connection = DBConnector.getConnection();
+        PreparedStatement pstmt = null;
+        try {
+            pstmt = connection.prepareStatement("SELECT * FROM " + a);
+            ResultSet results = pstmt.executeQuery();
+            DBConnector.printResults(results);
+            results.close();
+
+        } catch (SQLException e) {
+            //e.printStackTrace()();
+        } finally {
+            try {
+                pstmt.close();
+            } catch (SQLException e) {
+                //e.printStackTrace()();
+            }
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                //e.printStackTrace()();
+            }
+        }
+    }
 }
