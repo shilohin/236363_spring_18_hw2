@@ -778,7 +778,7 @@ public class   Solution {
                     " WHERE UserFollowPlaylist.UserId = ?  AND UserFollowPlaylist.PlaylistId = ?");
 
             pstmt.setInt(1, userId);
-            pstmt.setInt(1, playlistId);
+            pstmt.setInt(2, playlistId);
             Integer deleted = pstmt.executeUpdate();
             if (deleted == 0) {
                 ret = ReturnValue.NOT_EXISTS;
