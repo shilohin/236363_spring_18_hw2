@@ -57,10 +57,13 @@ public class   Solution {
                     "(\n" +
                     "       PlaylistId integer NOT NULL,\n" +
                     "       SongId integer NOT NULL,\n" +
+                    "       PlaylistGenre text NOT NULL,\n" +
+                    "       SongGenre text NOT NULL,\n" +
                     "       FOREIGN KEY (PlaylistId) REFERENCES Playlist(PlaylistId) ON DELETE CASCADE, \n" +
                     "       FOREIGN KEY (SongId) REFERENCES Song(SongId) ON DELETE CASCADE, \n" +
-                    "       PRIMARY KEY (PlaylistId,SongId)\n" +
-                    "       ORDER BY SongId  ");
+                    "       PRIMARY KEY (PlaylistId,SongId),\n" +
+                    "       CHECK (PlaylistGenre = SongGenre)\n" +
+                    ")");
             pstmt.execute();
             pstmt = connection.prepareStatement("CREATE TABLE UserFollowPlaylist\n" +
                     "(\n" +
@@ -95,7 +98,7 @@ public class   Solution {
                     "SELECT  SongId,COUNT(PlaylistId) As TotalPlaylist\n  " +
                     " FROM SongInPlaylist\n" +
                     "GROUP BY SongId \n" +
-            "       ORDER BY SongId  ";
+                    "ORDER BY SongId  ";
             pstmt = connection.prepareStatement(statment2);
             pstmt.execute();
         } catch (SQLException e) {
@@ -289,36 +292,39 @@ public class   Solution {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ReturnValue ret = ReturnValue.OK;
-        User user = getUserProfile(userId);
-        if(user.equals(User.badUser())){
-            ret = ReturnValue.NOT_EXISTS;
-        }else if (user.getPremium() == true) {
-            ret = ALREADY_EXISTS;
-        }
-        else {
-            try { {
+        try { {
+                pstmt = connection.prepareStatement("UPDATE Users" +
+                        " SET premium = ?" +
+                        " WHERE UserId = ? AND NOT premium");
+                pstmt.setBoolean(1, true);
+                pstmt.setInt(2, userId);
+                int updated = pstmt.executeUpdate();
+                if (updated == 0){
                     pstmt = connection.prepareStatement("UPDATE Users" +
                             " SET premium = ?" +
                             " WHERE UserId = ?");
                     pstmt.setBoolean(1, true);
                     pstmt.setInt(2, userId);
-                    pstmt.executeUpdate();
+                    updated = pstmt.executeUpdate();
+                    if (updated > 0) ret = ALREADY_EXISTS;
+                    else
+                        ret = NOT_EXISTS;
                 }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            ret = getReturnValueFromSQLException(e);
+        } finally {
+            try {
+                pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-                ret = getReturnValueFromSQLException(e);
-            } finally {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    connection.close();
-                    return ret;
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+            }
+            try {
+                connection.close();
+                return ret;
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
         try {
@@ -327,7 +333,6 @@ public class   Solution {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return null;
     }
 
@@ -336,36 +341,39 @@ public class   Solution {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ReturnValue ret = ReturnValue.OK;
-        User user = getUserProfile(userId);
-        if(user.equals(User.badUser())){
-            ret = ReturnValue.NOT_EXISTS;
-        }else if (user.getPremium() == false) {
-            ret = ALREADY_EXISTS;
-        }
-        else {
-            try { {
+        try { {
+            pstmt = connection.prepareStatement("UPDATE Users" +
+                    " SET premium = ?" +
+                    " WHERE UserId = ? AND premium");
+            pstmt.setBoolean(1, false);
+            pstmt.setInt(2, userId);
+            int updated = pstmt.executeUpdate();
+            if (updated == 0){
                 pstmt = connection.prepareStatement("UPDATE Users" +
                         " SET premium = ?" +
                         " WHERE UserId = ?");
                 pstmt.setBoolean(1, false);
                 pstmt.setInt(2, userId);
-                pstmt.executeUpdate();
+                updated = pstmt.executeUpdate();
+                if (updated > 0) ret = ALREADY_EXISTS;
+                else
+                    ret = NOT_EXISTS;
             }
+        }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            ret = getReturnValueFromSQLException(e);
+        } finally {
+            try {
+                pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-                ret = getReturnValueFromSQLException(e);
-            } finally {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    connection.close();
-                    return ret;
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+            }
+            try {
+                connection.close();
+                return ret;
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
         try {
@@ -374,7 +382,6 @@ public class   Solution {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return null;
     }
     public static ReturnValue addSong(Song song)
@@ -489,21 +496,13 @@ public class   Solution {
         ReturnValue ret = ReturnValue.OK;
 
         try {
-            pstmt = connection.prepareStatement("SELECT name FROM Song" +
+            pstmt = connection.prepareStatement("UPDATE Song" +
+                    " SET name = ?" +
                     " WHERE Song.SongId = ?");
-
-            pstmt.setInt(1, song.getId());
-            ResultSet resSet = pstmt.executeQuery();
-            if (!resSet.next()) {
-                ret = ReturnValue.NOT_EXISTS;
-            }else {
-                pstmt = connection.prepareStatement("UPDATE Song" +
-                        " SET name = ?" +
-                        " WHERE Song.SongId = ?");
-                pstmt.setString(1, song.getName());
-                pstmt.setInt(2, song.getId());
-                pstmt.executeUpdate();
-            }
+            pstmt.setString(1, song.getName());
+            pstmt.setInt(2, song.getId());
+            int updated = pstmt.executeUpdate();
+            if (updated == 0) ret = NOT_EXISTS;
         } catch (SQLException e) {
             e.printStackTrace();
             ret = getReturnValueFromSQLException(e);
@@ -670,37 +669,34 @@ public class   Solution {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ReturnValue ret = ReturnValue.OK;
-        Song song = getSong(songid);
-        Playlist playlist = getPlaylist(playlistId);
-        if(song.getId() == -1 || playlist.getId() == -1 ){
-            ret = NOT_EXISTS;
-        }
-        else if(!song.getGenre().equals(playlist.getGenre())){
-            ret = BAD_PARAMS;
-        }
-        else {
-            try {
-                pstmt = connection.prepareStatement("INSERT INTO SongInPlaylist(PlaylistId,SongId)" +
-                        " VALUES (?, ?)");
-                pstmt.setInt(1, playlistId);
-                pstmt.setInt(2, songid);
-                pstmt.execute();
+        try {
+            pstmt = connection.prepareStatement("INSERT INTO SongInPlaylist(PlaylistId,SongId,PlaylistGenre,SongGenre)" +
+                    " VALUES (?, ?, (SELECT genre FROM Playlist WHERE PlaylistId = ?), " +
+                    "(SELECT genre FROM Song WHERE SongId = ?))");
+            pstmt.setInt(1, playlistId);
+            pstmt.setInt(2, songid);
+            pstmt.setInt(3, playlistId);
+            pstmt.setInt(4, songid);
+            pstmt.execute();
 
+        } catch (SQLException e) {
+            e.printStackTrace();
+            if (Integer.valueOf(e.getSQLState()) == PostgreSQLErrorCodes.NOT_NULL_VIOLATION.getValue()) {
+                ret = NOT_EXISTS;
+            }
+            else
+                ret = getReturnValueFromSQLException(e);
+        } finally {
+            try {
+                pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-                ret = getReturnValueFromSQLException(e);
-            } finally {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    connection.close();
-                    return ret;
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+            }
+            try {
+                connection.close();
+                return ret;
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
         try {
@@ -816,36 +812,31 @@ public class   Solution {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ReturnValue ret = ReturnValue.OK;
-        Song song = getSong(songId);
-        if(song.getId() == -1 ){
-            ret = NOT_EXISTS;
-        } else {
+        try {
+            pstmt = connection.prepareStatement("UPDATE Song" +
+                    " SET playCount = playCount + ?" +
+                    " WHERE Song.SongId = ?");
+            pstmt.setInt(1,times);
+            pstmt.setInt(2, songId);
+            int affected = pstmt.executeUpdate();
+            if (affected == 0)
+                ret = NOT_EXISTS;
+            if (affected == 1)
+                ret = OK;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            ret = getReturnValueFromSQLException(e);
+        } finally {
             try {
-                pstmt = connection.prepareStatement("UPDATE Song" +
-                        " SET playCount = ?" +
-                        " WHERE Song.SongId = ?");
-                pstmt.setInt(1,song.getPlayCount() +times);
-                pstmt.setInt(2, songId);
-                int affected = pstmt.executeUpdate();
-                if (affected == 0)
-                    ret = NOT_EXISTS;
-                if (affected == 1)
-                    ret = OK;
+                pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-                ret = getReturnValueFromSQLException(e);
-            } finally {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    connection.close();
-                    return ret;
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+            }
+            try {
+                connection.close();
+                return ret;
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
         try {
@@ -980,7 +971,7 @@ public class   Solution {
         try {
             //Step 1: Check there is any playlist:
             pstmt = connection.prepareStatement("SELECT COUNT (PlaylistId) AS numPlaylists" +
-                    " FROM PlaylistId");
+                    " FROM Playlist");
             result = pstmt.executeQuery();
             if(!result.next()){
                 res = 0;
@@ -999,7 +990,7 @@ public class   Solution {
         res = -1;
         try {
             //Step 2: get max:
-            pstmt = connection.prepareStatement("SELECT MAX(PlaylistId) AS bestPlaylist " +
+            pstmt = connection.prepareStatement("SELECT MAX(PlaylistId) " +
                                                     "FROM (SELECT PlaylistId " +
                                                           "FROM PlaylistView " +
                                                           "WHERE TotalPlayCount = (SELECT MAX(TotalPlayCount) " +
@@ -1014,7 +1005,7 @@ public class   Solution {
             res = 0;
         } finally {
             try {
-                if (res == -1) res = convertResultSetToint(result, "bestPlaylist");
+                if (res == -1) res = convertResultSetToint(result, "max");
                 pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
