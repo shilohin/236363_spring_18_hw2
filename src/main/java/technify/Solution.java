@@ -1,9 +1,10 @@
 package technify;
 
-import technify.business.Playlist;
-import technify.business.ReturnValue;
-import technify.business.Song;
-import technify.business.User;
+import org.omg.PortableInterceptor.NON_EXISTENT;
+import technify.business.*;
+
+import static technify.business.ReturnValue.*;
+
 import technify.data.DBConnector;
 import technify.data.PostgreSQLErrorCodes;
 
@@ -12,8 +13,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-
-import static technify.business.ReturnValue.*;
 
 public class   Solution {
 
@@ -96,23 +95,23 @@ public class   Solution {
             // Create PlaylistView view
             String statment2 =" "+
                     "CREATE  VIEW SongInNumPlaylist AS "+
-                    "SELECT  SongId,COUNT(PlaylistId) As TotalPlaylist " +
-                    "FROM SongInPlaylist" +
+                    "SELECT  SongId, COUNT(PlaylistId) As TotalPlaylist " +
+                    "FROM SongInPlaylist " +
                     "GROUP BY SongId " +
-                    "ORDER BY SongId  ";
+                    "ORDER BY SongId DESC ";
             pstmt = connection.prepareStatement(statment2);
             pstmt.execute();
 
 
             // Create PlaylistView view
-            String statment3 =" "+
+            /*String statment3 =" "+
                     "CREATE  VIEW PlaylistUserCountry "+
                     "SELECT  playlistId, country " +
                     "FROM UserFollowPlaylist, User" +
                     "WHERE User.UserId =  UserFollowPlaylist.UserId";
 
             pstmt = connection.prepareStatement(statment3);
-            pstmt.execute();
+            pstmt.execute();*/
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
@@ -304,36 +303,39 @@ public class   Solution {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ReturnValue ret = ReturnValue.OK;
-        User user = getUserProfile(userId);
-        if(user.equals(User.badUser())){
-            ret = ReturnValue.NOT_EXISTS;
-        }else if (user.getPremium() == true) {
-            ret = ALREADY_EXISTS;
-        }
-        else {
-            try { {
+        try { {
+                pstmt = connection.prepareStatement("UPDATE Users" +
+                        " SET premium = ?" +
+                        " WHERE UserId = ? AND NOT premium");
+                pstmt.setBoolean(1, true);
+                pstmt.setInt(2, userId);
+                int updated = pstmt.executeUpdate();
+                if (updated == 0){
                     pstmt = connection.prepareStatement("UPDATE Users" +
                             " SET premium = ?" +
                             " WHERE UserId = ?");
                     pstmt.setBoolean(1, true);
                     pstmt.setInt(2, userId);
-                    pstmt.executeUpdate();
+                    updated = pstmt.executeUpdate();
+                    if (updated > 0) ret = ALREADY_EXISTS;
+                    else
+                        ret = NOT_EXISTS;
                 }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            ret = getReturnValueFromSQLException(e);
+        } finally {
+            try {
+                pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-                ret = getReturnValueFromSQLException(e);
-            } finally {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    connection.close();
-                    return ret;
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+            }
+            try {
+                connection.close();
+                return ret;
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
         try {
@@ -351,36 +353,39 @@ public class   Solution {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ReturnValue ret = ReturnValue.OK;
-        User user = getUserProfile(userId);
-        if(user.equals(User.badUser())){
-            ret = ReturnValue.NOT_EXISTS;
-        }else if (user.getPremium() == false) {
-            ret = ALREADY_EXISTS;
-        }
-        else {
-            try { {
+        try { {
+            pstmt = connection.prepareStatement("UPDATE Users" +
+                    " SET premium = ?" +
+                    " WHERE UserId = ? AND premium");
+            pstmt.setBoolean(1, false);
+            pstmt.setInt(2, userId);
+            int updated = pstmt.executeUpdate();
+            if (updated == 0){
                 pstmt = connection.prepareStatement("UPDATE Users" +
                         " SET premium = ?" +
                         " WHERE UserId = ?");
                 pstmt.setBoolean(1, false);
                 pstmt.setInt(2, userId);
-                pstmt.executeUpdate();
+                updated = pstmt.executeUpdate();
+                if (updated > 0) ret = ALREADY_EXISTS;
+                else
+                    ret = NOT_EXISTS;
             }
+        }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            ret = getReturnValueFromSQLException(e);
+        } finally {
+            try {
+                pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-                ret = getReturnValueFromSQLException(e);
-            } finally {
-                try {
-                    pstmt.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    connection.close();
-                    return ret;
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
+            }
+            try {
+                connection.close();
+                return ret;
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
         try {
@@ -932,11 +937,19 @@ public class   Solution {
         int total = -1 ;
         try {
             pstmt = connection.prepareStatement("SELECT SongId " +
-                    " FROM SongNumPlaylist " +
-                    "WHERE PlaylistId = (SELECT MAX(TotalPlaylist) FROM SongNumPlaylist  ");
+                    " FROM SongInNumPlaylist " +
+                    "WHERE TotalPlaylist = ( SELECT MAX(TotalPlaylist) FROM SongInNumPlaylist )  ");
             result = pstmt.executeQuery();
             if(!result.next()){
-                res = "No Songs";
+                pstmt = connection.prepareStatement("SELECT PlaylistId " +
+                        " FROM Playlist ");
+                result = pstmt.executeQuery();
+                if(!result.next()) {
+                    res = null;
+                }
+                else {
+                    res = "No songs";
+                }
                 total = 0;
             }
         } catch (SQLException e) {
@@ -949,7 +962,9 @@ public class   Solution {
                         "WHERE SongId = ?  ");
                 pstmt.setInt(1, convertResultSetToint(result,"SongId"));;
                 result = pstmt.executeQuery();
-                res = convertResultSetToString(result, "name");
+                while (result.next()) {
+                    res = convertResultSetToString(result, "name");
+                }
             } catch (SQLException e) {
                 e.printStackTrace();
                 res = null;
@@ -977,43 +992,38 @@ public class   Solution {
         ResultSet result  = null;
         int res = -1;
         try {
-            //Step 1: Check there is any playlist:
-            pstmt = connection.prepareStatement("SELECT COUNT (PlaylistId) AS numPlaylists" +
-                    " FROM Playlist");
-            result = pstmt.executeQuery();
-            if(!result.next()){
-                res = 0;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            res = 0;
-        }
-        try {
-            if (res == -1)
-                res = convertResultSetToint(result, "numPlaylists");
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        if (res == 0) return res;
-        res = -1;
-        try {
             //Step 2: get max:
-            pstmt = connection.prepareStatement("SELECT MAX(PlaylistId) " +
-                                                    "FROM (SELECT PlaylistId " +
-                                                          "FROM PlaylistView " +
-                                                          "WHERE TotalPlayCount = (SELECT MAX(TotalPlayCount) " +
-                                                                                  "FROM PlaylistView)" +
-                "                                         ) AS foo");
+            pstmt = connection.prepareStatement("SELECT PlaylistId " +
+                    "FROM PlaylistView " +
+                    "WHERE TotalPlayCount = ( SELECT MAX(TotalPlayCount) " +
+                    "FROM PlaylistView)");
             result = pstmt.executeQuery();
             if(!result.next()){
-                res = 0;
+                pstmt = connection.prepareStatement("SELECT MAX(PlaylistId) FROM Playlist ");
+                result = pstmt.executeQuery();
+                while(result.next())
+                {
+                    res = result.getInt(1);
+                }
+            }
+            else {
+                pstmt = connection.prepareStatement("SELECT MAX(PlaylistId) " +
+                        "FROM (SELECT PlaylistId " +
+                        "FROM PlaylistView " +
+                        "WHERE TotalPlayCount = ( SELECT MAX(TotalPlayCount) " +
+                        "FROM PlaylistView)" +
+                        "                                         ) AS foo");
+                result = pstmt.executeQuery();
             }
         } catch (SQLException e) {
             e.printStackTrace();
             res = 0;
         } finally {
             try {
-                if (res == -1) res = convertResultSetToint(result, "max");
+                while (result.next()) {
+                    if (res == -1)
+                        res = convertResultSetToint(result, "max");
+                }
                 pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
