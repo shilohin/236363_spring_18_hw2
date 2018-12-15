@@ -104,14 +104,14 @@ public class   Solution {
 
             //TODO: BEN - The creation of PlaylistUserCountry Fails due to syntax errors.
             // Create PlaylistView view
-            String statment3 =" "+
+            /*String statment3 =" "+
                     "CREATE  VIEW PlaylistUserCountry "+
                     "SELECT  playlistId, country " +
                     "FROM UserFollowPlaylist, User" +
                     "WHERE User.UserId =  UserFollowPlaylist.UserId";
 
             pstmt = connection.prepareStatement(statment3);
-            pstmt.execute();
+            pstmt.execute();*/
 
             String statment4 =" "+
                     "CREATE  VIEW ListenToSamePlaylist AS "+
@@ -1050,7 +1050,6 @@ public class   Solution {
         return null;
     }
 
-    //TODO: BEN
     public static ArrayList<Integer> hottestPlaylistsOnTechnify(){
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
@@ -1095,7 +1094,6 @@ public class   Solution {
         return output;
     }
 
-    //TODO: Inbar
     public static ArrayList<Integer> getSimilarUsers(Integer userId){
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
@@ -1103,20 +1101,36 @@ public class   Solution {
         ArrayList<Integer> output = new ArrayList<Integer>();
 
         try{
-            String count_user_playlists = " SELECT COUNT(UserId) FROM UserFollowPlaylist WHERE UserId = ? ";
-
-            String statment ="" +
-                    "SELECT _ FROM (" +
-                    "    SELECT UID1 " +
-                    "    FROM ListenToSamePlaylist " +
-                    "    WHERE UID2 = ? AND " +
-                    ") AS foo" +
-                    "ORDER BY _ ASC LIMIT 10";
-            pstmt = connection.prepareStatement(statment);
-            mov_recom = pstmt.executeQuery();
-
-            while(mov_recom.next()){
-                output.add(convertResultSetToint(mov_recom,"PlaylistId"));
+            //NOTE (INBAR) : Wait for answer about the case where userId doesn't follow anything
+            //Step 1: check if user follows
+            String verify = "SELECT UserId FROM UserFollowPlaylist WHERE UserId = ?";
+            pstmt = connection.prepareStatement(verify);
+            pstmt.setInt(1, userId);
+            ResultSet ver = pstmt.executeQuery();
+            if (!ver.next()){
+                pstmt = connection.prepareStatement("SELECT userId FROM Users WHERE NOT UserId = ? ORDER BY UserId ASC");
+                pstmt.setInt(1, userId);
+                mov_recom = pstmt.executeQuery();
+                while (mov_recom.next()) {
+                    output.add(convertResultSetToint(mov_recom, "UserId"));
+                }
+            }
+            else {
+                String count_user_playlists = " SELECT COUNT(UserId) FROM UserFollowPlaylist WHERE UserId = ? ";
+                String count_similar = " SELECT UID1, COUNT(UID1) as SIM FROM ListenToSamePlaylist WHERE UID2 = ? GROUP BY UID1";
+                String statment = "" +
+                        " SELECT UID1 " +
+                        " FROM (" + count_similar + ") as SIMILARS " +
+                        " WHERE SIMILARS.SIM >= 0.75 * (" + count_user_playlists + ") " +
+                        " ORDER BY UID1 ASC LIMIT 10";
+                pstmt = connection.prepareStatement(statment);
+                pstmt.setInt(1, userId);
+                pstmt.setInt(2, userId);
+                mov_recom = pstmt.executeQuery();
+                //DBConnector.printResults(mov_recom);
+                while (mov_recom.next()) {
+                    output.add(convertResultSetToint(mov_recom, "UID1"));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
