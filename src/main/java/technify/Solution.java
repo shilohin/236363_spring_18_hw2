@@ -1,10 +1,9 @@
 package technify;
 
-import org.omg.PortableInterceptor.NON_EXISTENT;
-import technify.business.*;
-
-import static technify.business.ReturnValue.*;
-
+import technify.business.Playlist;
+import technify.business.ReturnValue;
+import technify.business.Song;
+import technify.business.User;
 import technify.data.DBConnector;
 import technify.data.PostgreSQLErrorCodes;
 
@@ -13,6 +12,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+
+import static technify.business.ReturnValue.*;
 
 public class   Solution {
 
@@ -94,12 +95,23 @@ public class   Solution {
 
             // Create PlaylistView view
             String statment2 =" "+
-                    "CREATE  VIEW UserFollowNumPlaylist AS "+
-                    "SELECT  SongId,COUNT(PlaylistId) As TotalPlaylist\n  " +
-                    " FROM SongInPlaylist\n" +
-                    "GROUP BY SongId \n" +
+                    "CREATE  VIEW SongInNumPlaylist AS "+
+                    "SELECT  SongId,COUNT(PlaylistId) As TotalPlaylist " +
+                    "FROM SongInPlaylist" +
+                    "GROUP BY SongId " +
                     "ORDER BY SongId  ";
             pstmt = connection.prepareStatement(statment2);
+            pstmt.execute();
+
+
+            // Create PlaylistView view
+            String statment3 =" "+
+                    "CREATE  VIEW PlaylistUserCountry "+
+                    "SELECT  playlistId, country " +
+                    "FROM UserFollowPlaylist, User" +
+                    "WHERE User.UserId =  UserFollowPlaylist.UserId";
+
+            pstmt = connection.prepareStatement(statment3);
             pstmt.execute();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -292,39 +304,36 @@ public class   Solution {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ReturnValue ret = ReturnValue.OK;
-        try { {
-                pstmt = connection.prepareStatement("UPDATE Users" +
-                        " SET premium = ?" +
-                        " WHERE UserId = ? AND NOT premium");
-                pstmt.setBoolean(1, true);
-                pstmt.setInt(2, userId);
-                int updated = pstmt.executeUpdate();
-                if (updated == 0){
+        User user = getUserProfile(userId);
+        if(user.equals(User.badUser())){
+            ret = ReturnValue.NOT_EXISTS;
+        }else if (user.getPremium() == true) {
+            ret = ALREADY_EXISTS;
+        }
+        else {
+            try { {
                     pstmt = connection.prepareStatement("UPDATE Users" +
                             " SET premium = ?" +
                             " WHERE UserId = ?");
                     pstmt.setBoolean(1, true);
                     pstmt.setInt(2, userId);
-                    updated = pstmt.executeUpdate();
-                    if (updated > 0) ret = ALREADY_EXISTS;
-                    else
-                        ret = NOT_EXISTS;
+                    pstmt.executeUpdate();
                 }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            ret = getReturnValueFromSQLException(e);
-        } finally {
-            try {
-                pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-            }
-            try {
-                connection.close();
-                return ret;
-            } catch (SQLException e) {
-                e.printStackTrace();
+                ret = getReturnValueFromSQLException(e);
+            } finally {
+                try {
+                    pstmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    connection.close();
+                    return ret;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
         }
         try {
@@ -333,6 +342,7 @@ public class   Solution {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return null;
     }
 
@@ -341,39 +351,36 @@ public class   Solution {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         ReturnValue ret = ReturnValue.OK;
-        try { {
-            pstmt = connection.prepareStatement("UPDATE Users" +
-                    " SET premium = ?" +
-                    " WHERE UserId = ? AND premium");
-            pstmt.setBoolean(1, false);
-            pstmt.setInt(2, userId);
-            int updated = pstmt.executeUpdate();
-            if (updated == 0){
+        User user = getUserProfile(userId);
+        if(user.equals(User.badUser())){
+            ret = ReturnValue.NOT_EXISTS;
+        }else if (user.getPremium() == false) {
+            ret = ALREADY_EXISTS;
+        }
+        else {
+            try { {
                 pstmt = connection.prepareStatement("UPDATE Users" +
                         " SET premium = ?" +
                         " WHERE UserId = ?");
                 pstmt.setBoolean(1, false);
                 pstmt.setInt(2, userId);
-                updated = pstmt.executeUpdate();
-                if (updated > 0) ret = ALREADY_EXISTS;
-                else
-                    ret = NOT_EXISTS;
+                pstmt.executeUpdate();
             }
-        }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            ret = getReturnValueFromSQLException(e);
-        } finally {
-            try {
-                pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-            }
-            try {
-                connection.close();
-                return ret;
-            } catch (SQLException e) {
-                e.printStackTrace();
+                ret = getReturnValueFromSQLException(e);
+            } finally {
+                try {
+                    pstmt.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    connection.close();
+                    return ret;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }
         }
         try {
@@ -382,6 +389,7 @@ public class   Solution {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return null;
     }
     public static ReturnValue addSong(Song song)
@@ -924,8 +932,8 @@ public class   Solution {
         int total = -1 ;
         try {
             pstmt = connection.prepareStatement("SELECT SongId " +
-                    " FROM UserFollowNumPlaylist " +
-                    "WHERE PlaylistId = (SELECT MAX(TotalPlaylist) FROM UserFollowNumPlaylist  ");
+                    " FROM SongNumPlaylist " +
+                    "WHERE PlaylistId = (SELECT MAX(TotalPlaylist) FROM SongNumPlaylist  ");
             result = pstmt.executeQuery();
             if(!result.next()){
                 res = "No Songs";
@@ -1022,7 +1030,47 @@ public class   Solution {
 
     //TODO: BEN
     public static ArrayList<Integer> hottestPlaylistsOnTechnify(){
-        return null;
+        Connection connection = DBConnector.getConnection();
+        PreparedStatement pstmt = null;
+        ResultSet mov_recom = null;
+        ArrayList<Integer> output = new ArrayList<Integer>();
+
+        try{
+            String statment =" "+
+                    " SELECT PlaylistId" +
+                    " FROM(" +
+                    "       SELECT PlaylistId , (TotalPlayCount/num_song) AS rating" +
+                    "        FROM (SELECT PlaylistId , TotalPlayCount, num_song" +
+                    "                            FROM PlaylistView" +
+                    "                            WHERE num_song > 0  " +
+                    "       ) AS NewPlaylist " +
+                    " ORDER NewPlaylist.rating, NewPlaylist.PlaylistId ASC " +
+                    " LIMIT 10 )";
+
+            mov_recom = pstmt.executeQuery();
+
+            while(mov_recom.next()){
+                output.add(convertResultSetToint(mov_recom,"PlaylistId"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            output = new ArrayList<>();
+        }
+        finally {
+            try {
+                pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                connection.close();
+                return output;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return output;
     }
 
     //TODO: Inbar
@@ -1032,7 +1080,51 @@ public class   Solution {
 
     //TODO: BEN
     public static ArrayList<Integer> getTopCountryPlaylists(Integer userId) {
-        return null;
+        Connection connection = DBConnector.getConnection();
+        PreparedStatement pstmt = null;
+        ResultSet mov_recom = null;
+        ArrayList<Integer> output = new ArrayList<Integer>();
+
+        try{
+            String statment =" SELECT PlaylistId " +
+                    "FROM PlaylistView" +
+                    "WHERE PlaylistId EXISTS(SELECT PlaylistId"+
+                    "FROM (SELECT PlaylistId, COUNT(DISTINCT country) AS num_country" +
+                    " FROM(" +
+                    "       SELECT PlaylistId , country," +
+                    "        FROM PlaylistUserCountry AS PlaylistCountry" +
+                    " WHERE country EXISTS (SELECT  PlaylistId, country\" +\n" +
+                    "                    \"FROM Song, SongInPlaylist\" +\n" +
+                    "                    \"WHERE Song.SongId = SongInPlaylist.SongId AND PlaylistCountry.PlaylistId = PlaylistId ))" +
+                    "GROUP BY PlaylistId ) AS T" +
+                    " WHERE T.num_country = (SELECT COUNT(DISTINCT country) FROM PlaylistUserCountry WHERE PlaylistId = T.PlaylistId))" +
+                    "ORDER BY TotalPlayCount,PlaylistId ASC"+
+                    " LIMIT 10 ";
+
+            mov_recom = pstmt.executeQuery();
+
+            while(mov_recom.next()){
+                output.add(convertResultSetToint(mov_recom,"PlaylistId"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            output = new ArrayList<>();
+        }
+        finally {
+            try {
+                pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                connection.close();
+                return output;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return output;
     }
 
     //TODO: Inbar
