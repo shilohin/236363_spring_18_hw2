@@ -102,16 +102,25 @@ public class   Solution {
             pstmt = connection.prepareStatement(statment2);
             pstmt.execute();
 
-
+            //TODO: BEN - The creation of PlaylistUserCountry Fails due to syntax errors.
             // Create PlaylistView view
-            /*String statment3 =" "+
+            String statment3 =" "+
                     "CREATE  VIEW PlaylistUserCountry "+
                     "SELECT  playlistId, country " +
                     "FROM UserFollowPlaylist, User" +
                     "WHERE User.UserId =  UserFollowPlaylist.UserId";
 
             pstmt = connection.prepareStatement(statment3);
-            pstmt.execute();*/
+            pstmt.execute();
+
+            String statment4 =" "+
+                    "CREATE  VIEW ListenToSamePlaylist AS "+
+                    "SELECT  U1.UserId AS UID1, U2.UserId AS UID2 " +
+                    "FROM UserFollowPlaylist AS U1, UserFollowPlaylist AS U2 " +
+                    "WHERE U1.PlaylistId = U2.PlaylistId AND NOT U1.UserId = U2.UserId ";
+
+            pstmt = connection.prepareStatement(statment4);
+            pstmt.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         } finally {
@@ -166,15 +175,18 @@ public class   Solution {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
         try {
+
+            pstmt = connection.prepareStatement("DROP VIEW IF EXISTS ListenToSamePlaylist CASCADE");
+            pstmt.execute();
             pstmt = connection.prepareStatement("DROP TABLE IF EXISTS SongInPlaylist CASCADE");
             pstmt.execute();
-            pstmt = connection.prepareStatement("DROP TABLE IF EXISTS UserFollowPlaylist");
+            pstmt = connection.prepareStatement("DROP TABLE IF EXISTS UserFollowPlaylist CASCADE");
             pstmt.execute();
-            pstmt = connection.prepareStatement("DROP TABLE IF EXISTS Users");
+            pstmt = connection.prepareStatement("DROP TABLE IF EXISTS Users CASCADE");
             pstmt.execute();
-            pstmt = connection.prepareStatement("DROP TABLE IF EXISTS Song");
+            pstmt = connection.prepareStatement("DROP TABLE IF EXISTS Song CASCADE");
             pstmt.execute();
-            pstmt = connection.prepareStatement("DROP TABLE IF EXISTS Playlist");
+            pstmt = connection.prepareStatement("DROP TABLE IF EXISTS Playlist CASCADE");
             pstmt.execute();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -1085,10 +1097,49 @@ public class   Solution {
 
     //TODO: Inbar
     public static ArrayList<Integer> getSimilarUsers(Integer userId){
-        return null;
+        Connection connection = DBConnector.getConnection();
+        PreparedStatement pstmt = null;
+        ResultSet mov_recom = null;
+        ArrayList<Integer> output = new ArrayList<Integer>();
+
+        try{
+            String count_user_playlists = " SELECT COUNT(UserId) FROM UserFollowPlaylist WHERE UserId = ? ";
+
+            String statment ="" +
+                    "SELECT _ FROM (" +
+                    "    SELECT UID1 " +
+                    "    FROM ListenToSamePlaylist " +
+                    "    WHERE UID2 = ? AND " +
+                    ") AS foo" +
+                    "ORDER BY _ ASC LIMIT 10";
+            pstmt = connection.prepareStatement(statment);
+            mov_recom = pstmt.executeQuery();
+
+            while(mov_recom.next()){
+                output.add(convertResultSetToint(mov_recom,"PlaylistId"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            output = new ArrayList<>();
+        }
+        finally {
+            try {
+                pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                connection.close();
+                return output;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return output;
     }
 
-    //TODO: BEN
+    //TODO: BEN: this query fails on syntax. Please have a look.
     public static ArrayList<Integer> getTopCountryPlaylists(Integer userId) {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
@@ -1096,21 +1147,23 @@ public class   Solution {
         ArrayList<Integer> output = new ArrayList<Integer>();
 
         try{
-            String statment =" SELECT PlaylistId " +
+            String statment ="" +
+                    "SELECT PlaylistId " +
                     "FROM PlaylistView" +
-                    "WHERE PlaylistId EXISTS(SELECT PlaylistId"+
-                    "FROM (SELECT PlaylistId, COUNT(DISTINCT country) AS num_country" +
-                    " FROM(" +
-                    "       SELECT PlaylistId , country," +
-                    "        FROM PlaylistUserCountry AS PlaylistCountry" +
-                    " WHERE country EXISTS (SELECT  PlaylistId, country\" +\n" +
-                    "                    \"FROM Song, SongInPlaylist\" +\n" +
-                    "                    \"WHERE Song.SongId = SongInPlaylist.SongId AND PlaylistCountry.PlaylistId = PlaylistId ))" +
+                    "WHERE PlaylistId EXISTS( SELECT PlaylistId"+
+                    "                         FROM (SELECT PlaylistId, COUNT(DISTINCT country) AS num_country" +
+                    "                         FROM(" +
+                    "                              SELECT PlaylistId , country," +
+                    "                              FROM PlaylistUserCountry AS PlaylistCountry" +
+                    "                              WHERE country EXISTS (SELECT  PlaylistId, country\" +\n" +
+                    "                              \"FROM Song, SongInPlaylist\" +\n" +
+                    "                              \"WHERE Song.SongId = SongInPlaylist.SongId AND PlaylistCountry.PlaylistId = PlaylistId ))" +
                     "GROUP BY PlaylistId ) AS T" +
-                    " WHERE T.num_country = (SELECT COUNT(DISTINCT country) FROM PlaylistUserCountry WHERE PlaylistId = T.PlaylistId))" +
-                    "ORDER BY TotalPlayCount,PlaylistId ASC"+
-                    " LIMIT 10 ";
-
+                    "WHERE T.num_country = (SELECT COUNT(DISTINCT country) FROM PlaylistUserCountry WHERE PlaylistId = T.PlaylistId)) " +
+                    "ORDER BY TotalPlayCount DESC, PlaylistId ASC "+
+                    "LIMIT 10 ";
+            //TODO: Ben - The syntax error is around one of the EXISTS. Not sure which one.
+            pstmt = connection.prepareStatement(statment);
             mov_recom = pstmt.executeQuery();
 
             while(mov_recom.next()){
