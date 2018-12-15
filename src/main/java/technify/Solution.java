@@ -1051,12 +1051,12 @@ public class   Solution {
                     " FROM(" +
                     "       SELECT PlaylistId , (TotalPlayCount/num_song) AS rating" +
                     "        FROM (SELECT PlaylistId , TotalPlayCount, num_song" +
-                    "                            FROM PlaylistView" +
-                    "                            WHERE num_song > 0  " +
-                    "       ) AS NewPlaylist " +
-                    " ORDER NewPlaylist.rating, NewPlaylist.PlaylistId ASC " +
-                    " LIMIT 10 )";
-
+                    "              FROM PlaylistView" +
+                    "              WHERE num_song > 0 ) AS foo  " +
+                    "      ) AS NewPlaylist " +
+                    " ORDER BY NewPlaylist.rating DESC, NewPlaylist.PlaylistId ASC " +
+                    " LIMIT 10";
+            pstmt = connection.prepareStatement(statment);
             mov_recom = pstmt.executeQuery();
 
             while(mov_recom.next()){
