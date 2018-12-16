@@ -1204,9 +1204,67 @@ public class   Solution {
         return output;
     }
 
-    //TODO: Inbar
     public static ArrayList<Integer> getPlaylistRecommendation (Integer userId){
-        return null;
+        Connection connection = DBConnector.getConnection();
+        PreparedStatement pstmt = null;
+        ResultSet mov_recom = null;
+        ArrayList<Integer> output = new ArrayList<Integer>();
+        try{
+            String count_user_playlists = " SELECT COUNT(UserId) FROM UserFollowPlaylist WHERE UserId = ? ";
+            String count_similar = " SELECT UID1, COUNT(UID1) as SIM FROM ListenToSamePlaylist WHERE UID2 = ? GROUP BY UID1";
+            String similarUsers = "" +
+                    " SELECT UID1 AS UID" +
+                    " FROM (" + count_similar + ") as SIMILARS " +
+                    " WHERE SIMILARS.SIM >= 0.75 * (" + count_user_playlists + ") ";
+            String followedBySimilar = "" +
+                    " SELECT PlaylistId" +
+                    " FROM UserFollowPlaylist, (" + similarUsers + ") AS similarIds" +
+                    " WHERE UserFollowPlaylist.UserId = similarIds.UID GROUP BY PlaylistId ORDER BY PlaylistId ASC ";
+            String filterUserPlaylists = "" +
+                    "SELECT PlaylistId AS FPL FROM (" + followedBySimilar + ") AS SPL WHERE NOT EXISTS ( SELECT " +
+                    " * FROM UserFollowPlaylist WHERE UserFollowPlaylist.PlaylistId = SPL.PlaylistId AND " +
+                    " UserFollowPlaylist.UserID = ? )";
+            String similarFollowersCount =" "+
+                    "SELECT  PlaylistId, COUNT(UserId) As NumFollowers " +
+                    "FROM UserFollowPlaylist " +
+                    "WHERE EXISTS ( SELECT * FROM (" + similarUsers +") as SIM2 WHERE UserFollowPlaylist.UserId = SIM2.UID )" +
+                    "GROUP BY PlaylistId " +
+                    "ORDER BY NumFollowers DESC, PlaylistId ASC";
+
+            String statment = "" +
+                    "SELECT PlaylistId, NumFollowers "+
+                    "FROM ("+ filterUserPlaylists +") AS nonUser, (" + similarFollowersCount + ") AS PlaylistNumFollowers " +
+                    "WHERE nonUser.FPL = PlaylistNumFollowers.PlaylistId " +
+                    "ORDER BY NumFollowers DESC, PlaylistId ASC";
+            pstmt = connection.prepareStatement(statment);
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, userId);
+            pstmt.setInt(3, userId);
+            pstmt.setInt(4, userId);
+            pstmt.setInt(5, userId);
+            mov_recom = pstmt.executeQuery();
+            //DBConnector.printResults(mov_recom);
+            while (mov_recom.next()) {
+                output.add(convertResultSetToint(mov_recom, "PlaylistId"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            output = new ArrayList<>();
+        }
+        finally {
+            try {
+                pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                connection.close();
+                return output;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return output;
     }
 
     //TODO: Inbar
