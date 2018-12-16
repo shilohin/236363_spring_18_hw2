@@ -1235,7 +1235,7 @@ public class   Solution {
                     "SELECT PlaylistId, NumFollowers "+
                     "FROM ("+ filterUserPlaylists +") AS nonUser, (" + similarFollowersCount + ") AS PlaylistNumFollowers " +
                     "WHERE nonUser.FPL = PlaylistNumFollowers.PlaylistId " +
-                    "ORDER BY NumFollowers DESC, PlaylistId ASC";
+                    "ORDER BY NumFollowers DESC, PlaylistId ASC LIMIT 5";
             pstmt = connection.prepareStatement(statment);
             pstmt.setInt(1, userId);
             pstmt.setInt(2, userId);
