@@ -2,12 +2,6 @@ package technify;
 
 import org.junit.Test;
 import technify.business.Song;
-import technify.data.DBConnector;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import static org.junit.Assert.assertEquals;
 import static technify.business.ReturnValue.*;

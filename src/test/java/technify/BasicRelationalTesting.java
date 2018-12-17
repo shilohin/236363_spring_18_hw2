@@ -7,8 +7,6 @@ import technify.business.User;
 
 import static org.junit.Assert.assertEquals;
 import static technify.business.ReturnValue.*;
-import static technify.printer.selectTable;
-
 
 public class BasicRelationalTesting extends  AbstractTest {
     @Test
@@ -174,7 +172,6 @@ public class BasicRelationalTesting extends  AbstractTest {
         assertEquals((long) 0,(long) Solution.getPlaylistFollowersCount(1));
         assertEquals(OK, Solution.followPlaylist(1,1));
         assertEquals(OK, Solution.followPlaylist(2,1));
-        selectTable("UserFollowPlaylist");
         assertEquals((long) 2,(long) Solution.getPlaylistFollowersCount(1));
         assertEquals(OK, Solution.stopFollowPlaylist(1,1));
         assertEquals((long) 1,(long) Solution.getPlaylistFollowersCount(1));

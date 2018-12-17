@@ -8,7 +8,6 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
 import static technify.business.ReturnValue.*;
-import static technify.printer.selectTable;
 
 
 public class SameUserTest extends  AbstractTest {

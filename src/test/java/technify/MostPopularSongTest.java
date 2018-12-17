@@ -3,11 +3,9 @@ package technify;
 import org.junit.Test;
 import technify.business.Playlist;
 import technify.business.Song;
-import technify.business.User;
 
 import static org.junit.Assert.assertEquals;
 import static technify.business.ReturnValue.*;
-import static technify.printer.selectTable;
 
 
 public class MostPopularSongTest extends  AbstractTest {
