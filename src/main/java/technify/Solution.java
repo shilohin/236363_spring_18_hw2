@@ -1058,9 +1058,9 @@ public class   Solution {
 
         try{
             String statment =" "+
-                    " SELECT PlaylistId" +
+                    " SELECT PlaylistId, rating" +
                     " FROM(" +
-                    "       SELECT PlaylistId , (TotalPlayCount/num_song) AS rating" +
+                    "       SELECT PlaylistId , (CAST(TotalPlayCount AS FLOAT)/CAST(num_song AS FLOAT)) AS rating" +
                     "        FROM (SELECT PlaylistId , TotalPlayCount, num_song" +
                     "              FROM PlaylistView" +
                     "              WHERE num_song > 0 ) AS foo  " +
@@ -1069,7 +1069,7 @@ public class   Solution {
                     " LIMIT 10";
             pstmt = connection.prepareStatement(statment);
             mov_recom = pstmt.executeQuery();
-
+            //DBConnector.printResults(mov_recom);
             while(mov_recom.next()){
                 output.add(convertResultSetToint(mov_recom,"PlaylistId"));
             }
