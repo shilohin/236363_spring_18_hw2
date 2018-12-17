@@ -102,17 +102,6 @@ public class   Solution {
             pstmt = connection.prepareStatement(statment2);
             pstmt.execute();
 
-            //TODO: BEN - The creation of PlaylistUserCountry Fails due to syntax errors.
-            // Create PlaylistView view
-            /*String statment3 =" "+
-                    "CREATE  VIEW PlaylistUserCountry "+
-                    "SELECT  playlistId, country " +
-                    "FROM UserFollowPlaylist, User" +
-                    "WHERE User.UserId =  UserFollowPlaylist.UserId";
-
-            pstmt = connection.prepareStatement(statment3);
-            pstmt.execute();*/
-
             String statment4 =" "+
                     "CREATE  VIEW ListenToSamePlaylist AS "+
                     "SELECT  U1.UserId AS UID1, U2.UserId AS UID2 " +
@@ -1137,7 +1126,6 @@ public class   Solution {
         return output;
     }
 
-    //TODO: BEN: this query fails on syntax. Please have a look.
     public static ArrayList<Integer> getTopCountryPlaylists(Integer userId) {
         Connection connection = DBConnector.getConnection();
         PreparedStatement pstmt = null;
@@ -1145,23 +1133,18 @@ public class   Solution {
         ArrayList<Integer> output = new ArrayList<Integer>();
 
         try{
-            String statment ="" +
-                    "SELECT PlaylistId " +
-                    "FROM PlaylistView" +
-                    "WHERE PlaylistId EXISTS( SELECT PlaylistId"+
-                    "                         FROM (SELECT PlaylistId, COUNT(DISTINCT country) AS num_country" +
-                    "                         FROM(" +
-                    "                              SELECT PlaylistId , country," +
-                    "                              FROM PlaylistUserCountry AS PlaylistCountry" +
-                    "                              WHERE country EXISTS (SELECT  PlaylistId, country\" +\n" +
-                    "                              \"FROM Song, SongInPlaylist\" +\n" +
-                    "                              \"WHERE Song.SongId = SongInPlaylist.SongId AND PlaylistCountry.PlaylistId = PlaylistId ))" +
-                    "GROUP BY PlaylistId ) AS T" +
-                    "WHERE T.num_country = (SELECT COUNT(DISTINCT country) FROM PlaylistUserCountry WHERE PlaylistId = T.PlaylistId)) " +
-                    "ORDER BY TotalPlayCount DESC, PlaylistId ASC "+
-                    "LIMIT 10 ";
-            //TODO: Ben - The syntax error is around one of the EXISTS. Not sure which one.
-            pstmt = connection.prepareStatement(statment);
+            String relevant_songs = "" +
+                    " SELECT SongId FROM Song, Users WHERE Song.country = Users.country AND Users.UserId = ? AND Users.premium";
+            String relevat_playlists = "" +
+                    " SELECT PlaylistId " +
+                    " FROM PlaylistView" +
+                    " WHERE EXISTS ( SELECT * FROM SongInPlaylist, (" + relevant_songs + ") AS RelSongs " +
+                    "                WHERE PlaylistView.PlaylistId = SongInPlaylist.PlaylistId " +
+                    "                AND SongInPlaylist.SongId = RelSongs.SongId ) " +
+                    " ORDER BY TotalPlayCount DESC, PlaylistId ASC "+
+                    " LIMIT 10 ";
+            pstmt = connection.prepareStatement(relevat_playlists);
+            pstmt.setInt(1,userId);
             mov_recom = pstmt.executeQuery();
 
             while(mov_recom.next()){
@@ -1251,7 +1234,6 @@ public class   Solution {
         return output;
     }
 
-    //TODO: Inbar
     public static ArrayList<Integer> getSongsRecommendationByGenre(Integer userId, String genre){
 
         Connection connection = DBConnector.getConnection();

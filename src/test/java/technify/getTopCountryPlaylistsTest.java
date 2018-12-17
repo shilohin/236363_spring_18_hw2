@@ -154,15 +154,16 @@ public class getTopCountryPlaylistsTest extends  AbstractTest{
 
 //check the result
         ArrayList<Integer> sol = Solution.getTopCountryPlaylists(1);
+        assertEquals(10, (long)sol.size());
         assertEquals((long)6, (long)sol.get(0));
         assertEquals((long)7, (long)sol.get(1));
         assertEquals(8, (long)sol.get(2));
         assertEquals(9, (long)sol.get(3));
         assertEquals(10, (long)sol.get(4));
         assertEquals(1, (long)sol.get(5));
-        assertEquals(3, (long)sol.get(6));
-
-
-
+        assertEquals(2, (long)sol.get(6));
+        assertEquals(3, (long)sol.get(7));
+        assertEquals(4, (long)sol.get(8));
+        assertEquals(5, (long)sol.get(9));
     }
 }
