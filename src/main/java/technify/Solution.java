@@ -1101,21 +1101,6 @@ public class   Solution {
         ArrayList<Integer> output = new ArrayList<Integer>();
 
         try{
-            //NOTE (INBAR) : Wait for answer about the case where userId doesn't follow anything
-            //Step 1: check if user follows
-            String verify = "SELECT UserId FROM UserFollowPlaylist WHERE UserId = ?";
-            pstmt = connection.prepareStatement(verify);
-            pstmt.setInt(1, userId);
-            ResultSet ver = pstmt.executeQuery();
-            if (!ver.next()){
-                pstmt = connection.prepareStatement("SELECT userId FROM Users WHERE NOT UserId = ? ORDER BY UserId ASC");
-                pstmt.setInt(1, userId);
-                mov_recom = pstmt.executeQuery();
-                while (mov_recom.next()) {
-                    output.add(convertResultSetToint(mov_recom, "UserId"));
-                }
-            }
-            else {
                 String count_user_playlists = " SELECT COUNT(UserId) FROM UserFollowPlaylist WHERE UserId = ? ";
                 String count_similar = " SELECT UID1, COUNT(UID1) as SIM FROM ListenToSamePlaylist WHERE UID2 = ? GROUP BY UID1";
                 String statment = "" +
@@ -1131,7 +1116,6 @@ public class   Solution {
                 while (mov_recom.next()) {
                     output.add(convertResultSetToint(mov_recom, "UID1"));
                 }
-            }
         } catch (SQLException e) {
             e.printStackTrace();
             output = new ArrayList<>();
@@ -1269,7 +1253,48 @@ public class   Solution {
 
     //TODO: Inbar
     public static ArrayList<Integer> getSongsRecommendationByGenre(Integer userId, String genre){
-        return null;
+
+        Connection connection = DBConnector.getConnection();
+        PreparedStatement pstmt = null;
+        ResultSet mov_recom = null;
+        ArrayList<Integer> output = new ArrayList<Integer>();
+        try{
+            String songInUserPlayList = " SELECT * FROM SongInPlaylist, UserFollowPlaylist WHERE " +
+                    " SongInPlaylist.SongId = Song.SongId AND UserFollowPlaylist.PlaylistId = SongInPlaylist.PlaylistId " +
+                    " AND UserFollowPlaylist.UserId = ? ";
+            String statment = "" +
+                    " SELECT SongId, PlayCount" +
+                    " FROM Song " +
+                    " WHERE Song.genre = ? AND NOT EXISTS (" + songInUserPlayList + ") " +
+                    " ORDER BY PlayCount DESC, SongId ASC" +
+                    " LIMIT 10";
+            pstmt = connection.prepareStatement(statment);
+            pstmt.setString(1, genre);
+            pstmt.setInt(2, userId);
+            mov_recom = pstmt.executeQuery();
+            //DBConnector.printResults(mov_recom);
+            while (mov_recom.next()) {
+                output.add(convertResultSetToint(mov_recom, "SongId"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            output = new ArrayList<>();
+        }
+        finally {
+            try {
+                pstmt.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            try {
+                connection.close();
+                return output;
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return output;
     }
 
     public static ReturnValue getReturnValueFromSQLException(SQLException e) {
