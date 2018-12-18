@@ -938,15 +938,15 @@ public class   Solution {
                     "WHERE TotalPlaylist = ( SELECT MAX(TotalPlaylist) FROM SongInNumPlaylist )  ");
             result = pstmt.executeQuery();
             if(!result.next()){
-                pstmt = connection.prepareStatement("SELECT PlaylistId " +
+                /*pstmt = connection.prepareStatement("SELECT PlaylistId " +
                         " FROM Playlist ");
                 result = pstmt.executeQuery();
                 if(!result.next()) {
                     res = null;
-                }
-                else {
+                }*/
+                //else {
                     res = "No songs";
-                }
+                //}
                 total = 0;
             }
         } catch (SQLException e) {

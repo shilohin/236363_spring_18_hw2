@@ -120,6 +120,9 @@ public class CRUDSongTest extends  AbstractTest {
         s.setName("B");
         assertEquals(OK, Solution.updateSongName(s));
         assert(s.equals(Solution.getSong(1)));
+
+        s.setName(null);
+        assertEquals(BAD_PARAMS, Solution.updateSongName(s));
     }
 
     @Test
@@ -137,7 +140,6 @@ public class CRUDSongTest extends  AbstractTest {
         assertEquals(BAD_PARAMS, Solution.songPlay(1, -1));
         assertEquals(NOT_EXISTS, Solution.songPlay(2, 5));
         assertEquals(OK, Solution.songPlay(1, 5));
-        Song rets = Solution.getSong(1);
         s.setPlayCount(5);
         assert(s.equals(Solution.getSong(1)));
         assertEquals(BAD_PARAMS, Solution.songPlay(1, -10));

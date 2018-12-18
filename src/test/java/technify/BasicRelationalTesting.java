@@ -134,6 +134,7 @@ public class BasicRelationalTesting extends  AbstractTest {
         p.setDescription("aaa aaa");
         assertEquals(OK, Solution.addPlaylist(p));
 
+        assertEquals((long) 0,(long) Solution.getPlaylistFollowersCount(2)); //Pid not exists
         assertEquals((long) 0,(long) Solution.getPlaylistTotalPlayCount(1));
         assertEquals(OK, Solution.addSongToPlaylist(1,1));
         assertEquals(OK, Solution.addSongToPlaylist(2,1));
@@ -169,6 +170,7 @@ public class BasicRelationalTesting extends  AbstractTest {
         p.setDescription("aaa aaa");
         assertEquals(OK, Solution.addPlaylist(p));
 
+        assertEquals((long) 0,(long) Solution.getPlaylistFollowersCount(2)); //Pid not exists
         assertEquals((long) 0,(long) Solution.getPlaylistFollowersCount(1));
         assertEquals(OK, Solution.followPlaylist(1,1));
         assertEquals(OK, Solution.followPlaylist(2,1));

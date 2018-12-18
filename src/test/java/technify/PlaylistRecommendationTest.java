@@ -74,8 +74,8 @@ public class PlaylistRecommendationTest extends  AbstractTest {
         ArrayList<Integer> sol = Solution.getSimilarUsers(1);
         assertEquals(2, (long)sol.get(0));
         sol = Solution.getPlaylistRecommendation(2);
+        assertEquals(1, (long)sol.size());
         assertEquals(4, (long)sol.get(0));
-        //selectTable("PlaylistNumFollowers");
     }
 
     @Test

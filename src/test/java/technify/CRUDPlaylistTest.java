@@ -1,6 +1,7 @@
 package technify;
 
 import org.junit.Test;
+import org.omg.CORBA.BAD_PARAM;
 import technify.business.Playlist;
 
 import static org.junit.Assert.assertEquals;
@@ -102,5 +103,8 @@ public class CRUDPlaylistTest extends  AbstractTest {
         p.setDescription("bbb bbb");
         assertEquals(OK, Solution.updatePlaylist(p));
         assert(p.equals(Solution.getPlaylist(1)));
+
+        p.setDescription(null);
+        assertEquals(BAD_PARAMS, Solution.updatePlaylist(p));
     }
 }
