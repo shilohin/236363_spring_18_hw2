@@ -8,6 +8,7 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
 import static technify.business.ReturnValue.*;
+import static technify.printer.selectTable;
 
 public class HottestPlaylistOnTechnify extends  AbstractTest{
     @Test
@@ -85,7 +86,7 @@ public class HottestPlaylistOnTechnify extends  AbstractTest{
         assertEquals(10, (long)sol.get(4));
         assertEquals(11, (long)sol.get(5));
 
-        assertEquals(OK, Solution.songPlay(1,4));
+        assertEquals(OK, Solution.songPlay(1,40));
         //selectTable("PlaylistView");
         sol = Solution.hottestPlaylistsOnTechnify();
         assertEquals(6, sol.size());
@@ -215,7 +216,7 @@ public class HottestPlaylistOnTechnify extends  AbstractTest{
         assertEquals(10, (long)sol.get(9));
 
 
-        assertEquals(OK, Solution.songPlay(1, 4));
+        assertEquals(OK, Solution.songPlay(1, 40));
 
         sol = Solution.hottestPlaylistsOnTechnify();
         assertEquals(10, sol.size());

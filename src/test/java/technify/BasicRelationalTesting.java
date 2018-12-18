@@ -53,8 +53,8 @@ public class BasicRelationalTesting extends  AbstractTest {
         p2.setDescription("aaa aaa");
         assertEquals(OK, Solution.addPlaylist(p2));
 
-        assertEquals(NOT_EXISTS, Solution.addSongToPlaylist(1,1));
-        assertEquals(NOT_EXISTS, Solution.addSongToPlaylist(2,1));
+        assertEquals(BAD_PARAMS, Solution.addSongToPlaylist(1,1));
+        assertEquals(BAD_PARAMS, Solution.addSongToPlaylist(2,1));
         assertEquals(BAD_PARAMS, Solution.addSongToPlaylist(1,2));
 
         assertEquals(OK, Solution.addSongToPlaylist(1,3));

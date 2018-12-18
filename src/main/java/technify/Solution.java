@@ -86,7 +86,7 @@ public class   Solution {
             // Create PlaylistView view
             String statment =" "+
                     "CREATE  VIEW PlaylistView AS "+
-                    "SELECT PlaylistId, COUNT(SongId) AS num_song, SUM(playCount) AS TotalPlayCount  "+
+                    "SELECT PlaylistId, COUNT(SongId) AS num_song, CAST( SUM(playCount) AS INTEGER ) AS TotalPlayCount  "+
                     "FROM SongInPlaylistView "+
                     "GROUP BY PlaylistId ";
             pstmt = connection.prepareStatement(statment);
@@ -695,11 +695,7 @@ public class   Solution {
 
         } catch (SQLException e) {
             e.printStackTrace();
-            if (Integer.valueOf(e.getSQLState()) == PostgreSQLErrorCodes.NOT_NULL_VIOLATION.getValue()) {
-                ret = NOT_EXISTS;
-            }
-            else
-                ret = getReturnValueFromSQLException(e);
+            ret = getReturnValueFromSQLException(e);
         } finally {
             try {
                 pstmt.close();
@@ -993,38 +989,23 @@ public class   Solution {
         ResultSet result  = null;
         int res = -1;
         try {
-            //Step 2: get max:
-            pstmt = connection.prepareStatement("SELECT PlaylistId " +
-                    "FROM PlaylistView " +
-                    "WHERE TotalPlayCount = ( SELECT MAX(TotalPlayCount) " +
-                    "FROM PlaylistView)");
+            String statement = " SELECT RES, TC FROM (" +
+                    " SELECT Playlist.PlaylistId AS RES, COALESCE(TotalPlayCount,0) AS TC"+
+                    " FROM Playlist" +
+                    " LEFT OUTER JOIN PlaylistView ON PlaylistView.PlaylistId = Playlist.PlaylistId ) as RESES" +
+                    " ORDER BY TC DESC, RES DESC";
+            pstmt = connection.prepareStatement(statement);
             result = pstmt.executeQuery();
-            if(!result.next()){
-                pstmt = connection.prepareStatement("SELECT MAX(PlaylistId) FROM Playlist ");
-                result = pstmt.executeQuery();
-                while(result.next())
-                {
-                    res = result.getInt(1);
-                }
-            }
-            else {
-                pstmt = connection.prepareStatement("SELECT MAX(PlaylistId) " +
-                        "FROM (SELECT PlaylistId " +
-                        "FROM PlaylistView " +
-                        "WHERE TotalPlayCount = ( SELECT MAX(TotalPlayCount) " +
-                        "FROM PlaylistView)" +
-                        "                                         ) AS foo");
-                result = pstmt.executeQuery();
+            if (!result.next()){
+                res = 0;
             }
         } catch (SQLException e) {
             e.printStackTrace();
             res = 0;
         } finally {
             try {
-                while (result.next()) {
-                    if (res == -1)
-                        res = convertResultSetToint(result, "max");
-                }
+                if (res == -1)
+                    res = convertResultSetToint(result, "RES");
                 pstmt.close();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -1049,7 +1030,7 @@ public class   Solution {
             String statment =" "+
                     " SELECT PlaylistId, rating" +
                     " FROM(" +
-                    "       SELECT PlaylistId , (CAST(TotalPlayCount AS FLOAT)/CAST(num_song AS FLOAT)) AS rating" +
+                    "       SELECT PlaylistId , (TotalPlayCount/num_song) AS rating" +
                     "        FROM (SELECT PlaylistId , TotalPlayCount, num_song" +
                     "              FROM PlaylistView" +
                     "              WHERE num_song > 0 ) AS foo  " +

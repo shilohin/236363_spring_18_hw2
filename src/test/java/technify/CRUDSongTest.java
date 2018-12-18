@@ -142,4 +142,17 @@ public class CRUDSongTest extends  AbstractTest {
         assert(s.equals(Solution.getSong(1)));
         assertEquals(BAD_PARAMS, Solution.songPlay(1, -10));
     }
+
+    @Test
+    public void UpdateWithNullNameIdNotExists()
+    {
+        Song s = new Song();
+        s.setId(1);
+        s.setName(null);
+        s.setGenre("a");
+        s.setCountry("Aa");
+        s.setPlayCount(0);
+
+        assertEquals(NOT_EXISTS, Solution.updateSongName(s));
+    }
 }

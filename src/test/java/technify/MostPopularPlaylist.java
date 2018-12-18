@@ -38,10 +38,13 @@ public class MostPopularPlaylist extends  AbstractTest {
         p2.setGenre("A");
         p2.setDescription("aaa aaa");
         assertEquals(OK, Solution.addPlaylist(p2));
-        assertEquals((long)2, (long)Solution.getMostPopularPlaylist());
+
+        p2.setId(3);
+        assertEquals(OK, Solution.addPlaylist(p2));
+        assertEquals((long)3, (long)Solution.getMostPopularPlaylist());
         assertEquals(OK, Solution.addSongToPlaylist(1,1));
         assertEquals(OK, Solution.addSongToPlaylist(2,2));
-        assertEquals((long)2, (long)Solution.getMostPopularPlaylist());
+        assertEquals((long)3, (long)Solution.getMostPopularPlaylist());
         assertEquals(OK, Solution.songPlay(1, 10));
         assertEquals(OK, Solution.songPlay(2, 9));
         assertEquals((long)1, (long)Solution.getMostPopularPlaylist());
@@ -50,7 +53,10 @@ public class MostPopularPlaylist extends  AbstractTest {
         assertEquals(OK, Solution.removeSongFromPlaylist(2,2));
         assertEquals((long)1, (long)Solution.getMostPopularPlaylist());
         assertEquals(OK, Solution.removeSongFromPlaylist(1,1));
+        assertEquals((long)3, (long)Solution.getMostPopularPlaylist());
+        assertEquals(OK, Solution.deletePlaylist(p2));
         assertEquals((long)2, (long)Solution.getMostPopularPlaylist());
+        p2.setId(2);
         assertEquals(OK, Solution.deletePlaylist(p2));
         assertEquals((long)1, (long)Solution.getMostPopularPlaylist());
         assertEquals(OK, Solution.deletePlaylist(p));
