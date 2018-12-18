@@ -938,15 +938,7 @@ public class   Solution {
                     "WHERE TotalPlaylist = ( SELECT MAX(TotalPlaylist) FROM SongInNumPlaylist )  ");
             result = pstmt.executeQuery();
             if(!result.next()){
-                /*pstmt = connection.prepareStatement("SELECT PlaylistId " +
-                        " FROM Playlist ");
-                result = pstmt.executeQuery();
-                if(!result.next()) {
-                    res = null;
-                }*/
-                //else {
                     res = "No songs";
-                //}
                 total = 0;
             }
         } catch (SQLException e) {
@@ -1028,14 +1020,9 @@ public class   Solution {
 
         try{
             String statment =" "+
-                    " SELECT PlaylistId, rating" +
-                    " FROM(" +
-                    "       SELECT PlaylistId , (TotalPlayCount/num_song) AS rating" +
-                    "        FROM (SELECT PlaylistId , TotalPlayCount, num_song" +
-                    "              FROM PlaylistView" +
-                    "              WHERE num_song > 0 ) AS foo  " +
-                    "      ) AS NewPlaylist " +
-                    " ORDER BY NewPlaylist.rating DESC, NewPlaylist.PlaylistId ASC " +
+                    " SELECT PlaylistId, (TotalPlayCount/num_song) AS rating" +
+                    " FROM PlaylistView" +
+                    " ORDER BY rating DESC, PlaylistId ASC " +
                     " LIMIT 10";
             pstmt = connection.prepareStatement(statment);
             mov_recom = pstmt.executeQuery();
